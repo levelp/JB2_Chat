@@ -15,7 +15,7 @@ public class Client {
     private final PrintStream sendToServerStream;
 
     // Количество принятых строк
-    private AtomicInteger linesCounter = new AtomicInteger();
+    private final AtomicInteger receivedLines = new AtomicInteger();
 
     /**
      * @param server   к какому серверу подключаемся
@@ -24,11 +24,13 @@ public class Client {
     public Client(String server, String nickName) throws IOException {
         this.nickName = nickName;
         Socket con = new Socket(server, Server.PORT);
-        System.out.println("== Connect to \"" + server + ":" + Server.PORT + "\" with name \"" + nickName + "\"");
+        System.out.println("== Connect to \"" + server + ":" + Server.PORT + "\" with name \"" + nickName + "\" ==");
         // Открываем поток отправки на сервер
         sendToServerStream = new PrintStream(con.getOutputStream(), true);
+        sendToServerStream.println("\"" + nickName + "\" connected");
         // Пока нет принятых сообщений
-        linesCounter.set(0);
+        receivedLines.set(0);
+        // Поток, который слушает входяшие сообщения
         Thread listenThread = new Thread(() -> {
             try (BufferedReader in = new BufferedReader(
                     new InputStreamReader(con.getInputStream()))) {
@@ -36,13 +38,15 @@ public class Client {
                 while ((line = in.readLine()) != null) {
                     System.out.println(line);
                     // Увеличиваем количество принятых сообщений
-                    linesCounter.incrementAndGet();
+                    receivedLines.incrementAndGet();
                 }
             } catch (IOException e) {
-                e.printStackTrace();
+                System.out.println("Client " + nickName + " listening finished");
             }
-            System.out.println("Client " + nickName + " listening finished");
         });
+        // Поток не должен мешать выходу из программы
+        listenThread.setDaemon(true);
+        // Запускаем поток
         listenThread.start();
     }
 
@@ -51,27 +55,46 @@ public class Client {
             System.out.println("Usage: Client <nickName> [<serverName / IP>]");
             return;
         }
+        // Никнейм
         String nickName = args[0];
+        // Имя сервера
         String server = "localhost";
         if (args.length >= 2)
             server = args[1];
-        System.out.println("Type \"exit\" to exit");
+
+        // Подключаемся к серверу
         Client client = new Client(server, nickName);
+
+        // Команда для выхода из программы
+        final String EXIT_COMMAND = "exit";
+        // Показываем помощь
+        System.out.println("Type \"" + EXIT_COMMAND + "\" to exit");
+
+        // Считываем всё что вводит пользователь и отправляем на сервер
         Scanner scanner = new Scanner(System.in);
         while (true) {
             String message = scanner.nextLine();
-            if (message.equals("exit"))
+            // Если нам передали команду выхода => выходим
+            if (message.equals(EXIT_COMMAND))
                 break;
+            // Отправляем сообщение на сервер
             client.send(message);
         }
     }
 
-    public int getLinesCounter() {
-        return linesCounter.get();
+    /**
+     * @return количество принятых строк
+     */
+    public int getReceivedLines() {
+        return receivedLines.get();
     }
 
+    /**
+     * Отправляем сообщение
+     *
+     * @param message Строка сообщения
+     */
     public void send(String message) throws IOException {
         sendToServerStream.println(nickName + ": " + message);
     }
-
 }

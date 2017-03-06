@@ -34,13 +34,25 @@ class ChatHistory {
         return fileName;
     }
 
+    /**
+     * Добавить строчку в историю
+     *
+     * @param line строка
+     */
     synchronized void add(String line) {
-        // Сохраняем в историю
+        // Добавляем в локальный массив в памяти
         historyLocal.add(line);
+        // Дописываем в файл
         histWriter.println(line);
         histWriter.flush();
     }
 
+    /**
+     * Получаем все строки начиная с заданного индекса
+     *
+     * @param fromIndex начиная с какого индекса?
+     * @return список строк
+     */
     synchronized List<String> getLines(int fromIndex) {
         List<String> list = new ArrayList<>();
         for (int i = fromIndex; i < historyLocal.size(); i++)

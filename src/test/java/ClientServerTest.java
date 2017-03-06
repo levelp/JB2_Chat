@@ -26,28 +26,45 @@ public class ClientServerTest extends Assert {
         });
         serverThread.start();
 
+        int messages = 0;
         Client c1 = new Client("localhost", "A");
         Client c2 = new Client("localhost", "B");
+        messages += 2;
 
         c1.send("Hello!");
-        Thread.sleep(100);
-        assertEquals(1, c1.getLinesCounter());
+        messages++;
+        pause();
+
+        assertEquals(messages, c1.getReceivedLines());
 
         c2.send("Hi, B!");
+        messages++;
+        pause();
 
-        Thread.sleep(100);
-        assertEquals(2, c2.getLinesCounter());
-        assertEquals(2, c1.getLinesCounter());
+        assertEquals(messages, c2.getReceivedLines());
+        assertEquals(messages, c1.getReceivedLines());
 
-        for (int i = 1; i <= 10; i++) {
-            c1.send("Hello #" + i);
-        }
+        for (int i = 1; i <= 10; i++) c1.send("Hello #" + i);
+        messages += 10;
+        pause();
 
-        Thread.sleep(100);
-        assertEquals(12, c2.getLinesCounter());
-        assertEquals(12, c1.getLinesCounter());
+        assertEquals(messages, c2.getReceivedLines());
+        assertEquals(messages, c1.getReceivedLines());
+
+        Client c3 = new Client("localhost", "New person");
+        messages++;
+        for (int i = 1; i <= 10; i++) c2.send("c3 message #" + i);
+        messages += 10;
+        pause();
+
+        assertEquals(messages, c1.getReceivedLines());
+        assertEquals(messages, c2.getReceivedLines());
+        assertEquals(messages, c3.getReceivedLines());
 
         serverThread.interrupt();
-        new File("test.txt").delete();
+    }
+
+    private void pause() throws InterruptedException {
+        Thread.sleep(100);
     }
 }
