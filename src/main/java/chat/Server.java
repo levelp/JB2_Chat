@@ -16,11 +16,16 @@ public class Server {
 
     public Server(String chatName) throws IOException, InterruptedException {
         chatHistory = new ChatHistory(chatName);
+        //
         ServerSocket server = new ServerSocket(PORT);
         System.out.println("ChatServer started on port " + PORT + " log \"" +
-                chatHistory.getFileName() + "\"");
+                chatHistory.fileName + "\"");
         try {
+            // Бесконечно ждём входящих подключений
             while (true) {
+                // Ждём входящих подключений
+                // На методе accept() поток выполнения
+                // останавливается
                 Socket clientSocket = server.accept();
                 System.out.println("Client connected: " + clientSocket.getInetAddress());
                 // Общение с клиентом
